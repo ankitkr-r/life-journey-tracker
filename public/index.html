@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Life Journey</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="background-overlay"></div>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-compass"></i> Life Journey</h1>
+            <p>A beautiful timeline of life's greatest memories, trips, and milestones.</p>
+            
+            <div id="authSection" style="margin-bottom: 20px;">
+                <button id="loginBtn" class="primary-btn"><i class="fab fa-google"></i> Sign in with Google</button>
+                <div id="userProfile" style="display: none; align-items: center; justify-content: center; gap: 10px;">
+                    <img id="userAvatar" src="" alt="User Avatar" referrerpolicy="no-referrer" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white;">
+                    <span id="userName" style="font-weight: 600; font-size: 1.1rem;"></span>
+                    <button id="logoutBtn" class="secondary-btn" style="padding: 6px 15px; font-size: 0.9rem;">Logout</button>
+                </div>
+            </div>
+
+            <div id="actionButtons" style="display: none; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
+                <button id="addEventBtn" class="primary-btn"><i class="fas fa-plus"></i> New Trip / Event</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- View 1: Years View -->
+        <div id="yearsView" class="view-container years-grid">
+            <!-- Year cards will be injected here -->
+        </div>
+
+        <!-- View 2: Trips View -->
+        <div id="tripsView" class="view-container" style="display: none;">
+            <button id="backToYearsBtn" class="primary-btn" style="margin-bottom: 30px;"><i class="fas fa-arrow-left"></i> Back to Years</button>
+            <h2 id="currentYearTitle" class="year-title" style="margin-bottom: 40px; display: block; left: 0; transform: none; text-align: center; width: fit-content; margin-left: auto; margin-right: auto;">2024 Trips</h2>
+            <div id="tripsGrid" class="trips-grid">
+                <!-- Trip cards will be injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for adding a new event -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content glass-panel">
+            <span class="close-btn" id="closeEventModal">&times;</span>
+            <h2>Create New Memory</h2>
+            <form id="addEventForm">
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" name="title" required placeholder="e.g., Fresher's Party">
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">Date *</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Tell the story..."></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">Save Memory</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for adding media to an existing event -->
+    <div id="mediaModal" class="modal">
+        <div class="modal-content glass-panel">
+            <span class="close-btn" id="closeMediaModal">&times;</span>
+            <h2><i class="fas fa-camera"></i> Add Photos / Videos</h2>
+            <p id="mediaModalEventTitle" class="modal-subtitle">To Event</p>
+            <form id="addMediaForm">
+                <input type="hidden" id="mediaEventId" name="eventId">
+                <div class="form-group">
+                    <label for="mediaFile">Select Files (Multiple allowed)</label>
+                    <input type="file" id="mediaFile" name="media" accept="image/*,video/*" multiple required>
+                </div>
+                <button type="submit" class="submit-btn"><i class="fas fa-upload"></i> Upload to Google Drive</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for viewing gallery grid -->
+    <div id="galleryModal" class="modal">
+        <div class="modal-content glass-panel" style="max-width: 900px; width: 95%;">
+            <span class="close-btn" id="closeGalleryModal">&times;</span>
+            <h2 id="galleryModalTitle"><i class="fas fa-images"></i> Trip Gallery</h2>
+            <div id="galleryGridContainer" class="phone-gallery-grid" style="margin-top: 20px;">
+                <!-- Thumbnails will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Slider Modal (Phone style) -->
+    <div id="sliderModal" class="slider-modal">
+        <span class="close-slider" id="closeSliderModal">&times;</span>
+        <span class="delete-photo-btn" id="deletePhotoBtn"><i class="fas fa-trash"></i></span>
+        <div class="slider-container" id="sliderContainer">
+            <!-- Full size items injected here -->
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+node_modules/
+database.sqlite
+oauth2.json
+firebase-service-account.json
+.env
+public/uploads/
+.DS_Store
+credentials.json
+token.json
