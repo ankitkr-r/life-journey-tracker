@@ -33,13 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/auth/status');
             const data = await res.json();
             
+            const authSectionCenter = document.getElementById('authSectionCenter');
             if (data.connected && data.user) {
+                if(authSectionCenter) authSectionCenter.style.display = 'none';
                 loginBtn.style.display = 'none';
-                userProfile.style.display = 'flex';
+                userProfile.style.display = 'block';
                 userName.textContent = data.user.name;
                 userAvatar.src = data.user.picture;
                 actionButtons.style.display = 'flex';
+                isDriveConnected = true;
+                loadEvents();
             } else {
+                if(authSectionCenter) authSectionCenter.style.display = 'block';
                 loginBtn.style.display = 'inline-block';
                 userProfile.style.display = 'none';
                 actionButtons.style.display = 'none';
@@ -436,10 +441,20 @@ document.addEventListener('DOMContentLoaded', () => {
     closeEventModal.onclick = () => eventModal.style.display = "none";
     closeMediaModal.onclick = () => mediaModal.style.display = "none";
     
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    
+    userAvatar.onclick = (e) => {
+        e.stopPropagation();
+        dropdownMenu.classList.toggle('show');
+    };
+
     window.onclick = (e) => {
         if (e.target == eventModal) eventModal.style.display = "none";
         if (e.target == mediaModal) mediaModal.style.display = "none";
         if (e.target == galleryModal) galleryModal.style.display = "none";
+        if (dropdownMenu && dropdownMenu.classList.contains('show') && !e.target.closest('#userProfile')) {
+            dropdownMenu.classList.remove('show');
+        }
     }
 
     function openMediaModal(id, title) {

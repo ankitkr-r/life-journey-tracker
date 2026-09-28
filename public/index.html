@@ -10,20 +10,33 @@
 </head>
 <body>
     <div class="background-overlay"></div>
+
+    <!-- Top Right Auth Section -->
+    <div id="authSectionTopRight" class="top-right-auth">
+
+        
+        <div id="userProfile" class="user-profile-container" style="display: none;">
+            <img id="userAvatar" src="" alt="User Avatar" class="avatar" referrerpolicy="no-referrer">
+            
+            <div class="dropdown-menu" id="dropdownMenu">
+                <div class="dropdown-header">
+                    <span id="userName" class="user-name"></span>
+                </div>
+                <hr>
+                <button id="logoutBtn" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <div class="header-content">
             <h1><i class="fas fa-compass"></i> Life Journey</h1>
             <p>A beautiful timeline of life's greatest memories, trips, and milestones.</p>
             
-            <div id="authSection" style="margin-bottom: 20px;">
+            <div id="authSectionCenter" style="margin-bottom: 20px;">
                 <button id="loginBtn" class="primary-btn"><i class="fab fa-google"></i> Sign in with Google</button>
-                <div id="userProfile" style="display: none; align-items: center; justify-content: center; gap: 10px;">
-                    <img id="userAvatar" src="" alt="User Avatar" referrerpolicy="no-referrer" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white;">
-                    <span id="userName" style="font-weight: 600; font-size: 1.1rem;"></span>
-                    <button id="logoutBtn" class="secondary-btn" style="padding: 6px 15px; font-size: 0.9rem;">Logout</button>
-                </div>
             </div>
-
+            
             <div id="actionButtons" style="display: none; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
                 <button id="addEventBtn" class="primary-btn"><i class="fas fa-plus"></i> New Trip / Event</button>
             </div>

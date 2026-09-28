@@ -560,3 +560,16 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
         transform: none;
     }
 }
+
+/* Top Right Auth & Profile */
+.top-right-auth { position: absolute; top: 20px; right: 20px; z-index: 50; }
+.user-profile-container { position: relative; cursor: pointer; }
+.avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; object-fit: cover; }
+.avatar:hover { transform: scale(1.1); }
+.dropdown-menu { display: none; position: absolute; top: 55px; right: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); min-width: 180px; padding: 10px 0; text-align: left; color: #2d3436; z-index: 100; }
+.dropdown-menu.show { display: block; animation: fadeInDown 0.2s ease-out; }
+.dropdown-header { padding: 10px 20px; font-weight: 600; }
+.dropdown-menu hr { border: none; border-top: 1px solid #ddd; margin: 5px 0; }
+.dropdown-item { padding: 10px 20px; display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 1rem; color: #e74c3c; font-weight: 600; }
+.dropdown-item:hover { background: rgba(0,0,0,0.05); }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
