@@ -188,14 +188,19 @@ app.get('/api/events', async (req, res) => {
 });
 
 app.post('/api/events', getDriveForUser, async (req, res) => {
-    const { title, date, description } = req.body;
+    const { title, date, description, country, state, district, lat, lng } = req.body;
     try {
         let calendarYear = date ? new Date(date).getFullYear().toString() : "Unknown";
         await getOrCreateYearFolder(req.drive, calendarYear); // Just to ensure structure exists
         
         const newEvent = {
             user_id: req.session.userId,
-            title, date, description
+            title, date, description,
+            country: country || 'India',
+            state: state || '',
+            district: district || '',
+            lat: lat ? parseFloat(lat) : null,
+            lng: lng ? parseFloat(lng) : null
         };
         const docRef = await db.collection('events').add(newEvent);
         res.json({ id: docRef.id, ...newEvent, media: [] });
@@ -301,6 +306,52 @@ app.delete('/api/media/:id', getDriveForUser, async (req, res) => {
     }
 });
 
+
+// --- Phase 4: Future Plans API ---
+app.get('/api/plans', async (req, res) => {
+    if (!req.session.userId) return res.json([]);
+    try {
+        const snapshot = await db.collection('plans').where('user_id', '==', req.session.userId).get();
+        const plans = [];
+        snapshot.forEach(doc => {
+            plans.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(plans);
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/plans', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
+    try {
+        const { date, venue, note, map_link, budget } = req.body;
+        const newPlan = {
+            user_id: req.session.userId,
+            date: date || null,
+            venue: venue || 'Unknown Venue',
+            note: note || '',
+            map_link: map_link || '',
+            budget: budget || 0,
+            created_at: new Date().toISOString()
+        };
+        const docRef = await db.collection('plans').add(newPlan);
+        res.json({ id: docRef.id, ...newPlan });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/plans/:id', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
+    try {
+        await db.collection('plans').doc(req.params.id).delete();
+        res.json({ success: true });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });
+

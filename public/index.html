@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <!-- Leaflet for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     <div class="background-overlay"></div>
@@ -15,14 +21,18 @@
     <div id="authSectionTopRight" class="top-right-auth">
 
         
-        <div id="userProfile" class="user-profile-container" style="display: none;">
+                <div id="userProfile" class="user-profile-container" style="display: none;">
             <img id="userAvatar" src="" alt="User Avatar" class="avatar" referrerpolicy="no-referrer">
             
             <div class="dropdown-menu" id="dropdownMenu">
                 <div class="dropdown-header">
                     <span id="userName" class="user-name"></span>
                 </div>
-                <hr>
+                <div class="dropdown-stats" style="padding: 10px 15px; font-size: 0.9rem; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 5px;">
+                    <div style="margin-bottom: 8px;"><i class="fas fa-route" style="color:#ff6b6b; width:20px;"></i> <span id="statTotalTrips" style="font-weight:bold; color:white;">0</span> Life Events</div>
+                    <div style="margin-bottom: 8px;"><i class="fas fa-camera" style="color:#4ecdc4; width:20px;"></i> <span id="statTotalMemories" style="font-weight:bold; color:white;">0</span> Memories Saved</div>
+                    <div><i class="fas fa-map-signs" style="color:#f39c12; width:20px;"></i> <span id="statTotalPlans" style="font-weight:bold; color:white;">0</span> Future Plans</div>
+                </div>
                 <button id="logoutBtn" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
         </div>
@@ -31,14 +41,21 @@
     <header>
         <div class="header-content">
             <h1><i class="fas fa-compass"></i> Life Journey</h1>
-            <p>A beautiful timeline of life's greatest memories, trips, and milestones.</p>
+                        <p>A beautiful timeline of life's greatest memories, trips, and milestones.</p>
             
+            <div id="viewToggle" class="view-toggle" style="display: none; justify-content: center; margin: 15px 0;">
+                <button id="navMemoriesBtn" class="toggle-btn active"><i class="fas fa-camera-retro"></i> Memories</button>
+                <button id="navMapBtn" class="toggle-btn"><i class="fas fa-globe-asia"></i> Life Map</button>
+                <button id="navPlansBtn" class="toggle-btn"><i class="fas fa-map-marked-alt"></i> Future Plans</button>
+            </div>
+
             <div id="authSectionCenter" style="margin-bottom: 20px;">
                 <button id="loginBtn" class="primary-btn"><i class="fab fa-google"></i> Sign in with Google</button>
             </div>
             
             <div id="actionButtons" style="display: none; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
                 <button id="addEventBtn" class="primary-btn"><i class="fas fa-plus"></i> New Trip / Event</button>
+                <button id="addPlanBtn" class="primary-btn" style="display: none;"><i class="fas fa-map-marker-alt"></i> Add Future Plan</button>
             </div>
         </div>
     </header>
@@ -55,13 +72,54 @@
             <h2 id="currentYearTitle" class="year-title" style="margin-bottom: 40px; display: block; left: 0; transform: none; text-align: center; width: fit-content; margin-left: auto; margin-right: auto;">2024 Trips</h2>
             <div id="tripsGrid" class="trips-grid">
                 <!-- Trip cards will be injected here -->
-            </div>
+                        </div>
+        </div>
+
+        <!-- View 3: Future Plans View -->
+        <div id="plansView" class="view-container plans-grid" style="display: none;">
+            <!-- Plan cards will be injected here -->
+        </div>
+
+        <!-- View 4: Life Map View -->
+        <div id="mapView" style="display: none; aspect-ratio: 4 / 3; width: 90vw; max-width: 1200px; height: auto; max-height: 85vh; margin: 0 auto 40px auto; border-radius: 35px; overflow: hidden; position: relative; box-shadow: 0 30px 60px rgba(0,0,0,0.6); border: 8px solid rgba(255, 255, 255, 0.2); animation: fadeIn 0.4s ease; background: #e3f2fd;">
+            <div id="lifeMap" style="width: 100%; height: 100%; z-index: 1;"></div>
         </div>
     </main>
 
+    <!-- Modal for adding a new Plan -->
+    <div id="planModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closePlanModal">&times;</span>
+            <h2><i class="fas fa-map-marker-alt"></i> Add Future Plan</h2>
+            <form id="addPlanForm">
+                <div class="form-group">
+                    <label for="planVenue">Venue / Place *</label>
+                    <input type="text" id="planVenue" name="venue" required>
+                </div>
+                <div class="form-group">
+                    <label for="planDate">Target Date *</label>
+                    <input type="date" id="planDate" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="planNote">Notes</label>
+                    <textarea id="planNote" name="note" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="planMap">Map Link (Optional)</label>
+                    <input type="url" id="planMap" name="map_link" placeholder="https://maps.google.com/...">
+                </div>
+                <div class="form-group">
+                    <label for="planBudget">Estimated Budget (Optional)</label>
+                    <input type="number" id="planBudget" name="budget" placeholder="0">
+                </div>
+                <button type="submit" class="submit-btn primary-btn"><i class="fas fa-save"></i> Save Plan</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal for adding a new event -->
     <div id="eventModal" class="modal">
-        <div class="modal-content glass-panel">
+        <div class="modal-content">
             <span class="close-btn" id="closeEventModal">&times;</span>
             <h2>Create New Memory</h2>
             <form id="addEventForm">
@@ -80,6 +138,27 @@
                     <textarea id="description" name="description" rows="3" placeholder="Tell the story..."></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="country">Country *</label>
+                    <select id="country" name="country" required>
+                        <option value="India" selected>India</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="state">State *</label>
+                    <select id="state" name="state" required>
+                        <option value="">Select State</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="district">District/City *</label>
+                    <input list="district-list" id="district" name="district" required placeholder="Type or select district...">
+                    <datalist id="district-list"></datalist>
+                </div>
+                
+                <input type="hidden" id="lat" name="lat">
+                <input type="hidden" id="lng" name="lng">
+
                 <button type="submit" class="submit-btn">Save Memory</button>
             </form>
         </div>
@@ -87,7 +166,7 @@
 
     <!-- Modal for adding media to an existing event -->
     <div id="mediaModal" class="modal">
-        <div class="modal-content glass-panel">
+        <div class="modal-content">
             <span class="close-btn" id="closeMediaModal">&times;</span>
             <h2><i class="fas fa-camera"></i> Add Photos / Videos</h2>
             <p id="mediaModalEventTitle" class="modal-subtitle">To Event</p>
@@ -104,7 +183,7 @@
 
     <!-- Modal for viewing gallery grid -->
     <div id="galleryModal" class="modal">
-        <div class="modal-content glass-panel" style="max-width: 900px; width: 95%;">
+        <div class="modal-content" style="max-width: 900px; width: 95%;">
             <span class="close-btn" id="closeGalleryModal">&times;</span>
             <h2 id="galleryModalTitle"><i class="fas fa-images"></i> Trip Gallery</h2>
             <div id="galleryGridContainer" class="phone-gallery-grid" style="margin-top: 20px;">
@@ -123,5 +202,15 @@
     </div>
 
     <script src="script.js"></script>
+    <!-- Floating Upload Manager -->
+    <div id="uploadManager" class="upload-manager">
+        <div class="um-header">
+            <span id="umTitle">Uploads</span>
+            <button id="umMinimizeBtn"><i class="fas fa-chevron-down"></i></button>
+        </div>
+        <div id="umBody" class="um-body">
+            <!-- Upload items injected here -->
+        </div>
+    </div>
 </body>
 </html>
