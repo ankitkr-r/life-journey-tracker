@@ -9,14 +9,43 @@ const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 
 // Initialize Firebase Admin SDK
-const serviceAccount = require('./firebase-service-account.json');
-initializeApp({
-  credential: cert(serviceAccount)
-});
+function getFirebaseCredential() {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        try {
+            const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return cert(parsed);
+        } catch (e) {
+            console.error('Error parsing FIREBASE_SERVICE_ACCOUNT env variable:', e);
+        }
+    }
+    const secretPath = '/etc/secrets/firebase-service-account.json';
+    const localPath = path.join(__dirname, 'firebase-service-account.json');
+    const targetPath = fs.existsSync(secretPath) ? secretPath : (fs.existsSync(localPath) ? localPath : null);
+    if (targetPath) {
+        try {
+            const raw = fs.readFileSync(targetPath, 'utf8');
+            return cert(JSON.parse(raw));
+        } catch (e) {
+            console.error(`Error reading Firebase service account from ${targetPath}:`, e);
+        }
+    }
+    return undefined;
+}
+
+const firebaseCred = getFirebaseCredential();
+if (firebaseCred) {
+    initializeApp({ credential: firebaseCred });
+} else {
+    initializeApp();
+}
 const db = getFirestore();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+
+// Enable trust proxy for cloud deployment (Render, Heroku, etc.)
+app.set('trust proxy', 1);
 
 app.use(cors());
 app.use(express.json());
@@ -24,9 +53,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.use(session({
-    secret: 'life-journey-secret',
+    secret: process.env.SESSION_SECRET || 'life-journey-secret',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        secure: 'auto',
+        sameSite: 'lax'
+    }
 }));
 
 const uploadDir = path.join(__dirname, 'public', 'uploads');
@@ -51,10 +84,74 @@ const SCOPES = [
     'https://www.googleapis.com/auth/userinfo.profile'
 ];
 
-function getOAuthClient() {
-    const raw = fs.readFileSync(credentialsPath);
-    const { client_secret, client_id, redirect_uris } = JSON.parse(raw).web || JSON.parse(raw).installed;
-    return new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+function getCredentialsData() {
+    if (process.env.OAUTH2_JSON) {
+        try {
+            const parsed = JSON.parse(process.env.OAUTH2_JSON);
+            return parsed.web || parsed.installed || parsed;
+        } catch (e) {
+            console.error('Error parsing OAUTH2_JSON env variable:', e);
+        }
+    }
+    const secretPath = '/etc/secrets/oauth2.json';
+    const localPath = credentialsPath;
+    const targetPath = fs.existsSync(secretPath) ? secretPath : (fs.existsSync(localPath) ? localPath : null);
+    if (targetPath) {
+        try {
+            const raw = fs.readFileSync(targetPath, 'utf8');
+            const parsed = JSON.parse(raw);
+            return parsed.web || parsed.installed || parsed;
+        } catch (e) {
+            console.error(`Error reading oauth2 credentials from ${targetPath}:`, e);
+        }
+    }
+    return {
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uris: process.env.GOOGLE_REDIRECT_URI ? [process.env.GOOGLE_REDIRECT_URI] : []
+    };
+}
+
+function getRedirectUri(req, registeredUris = []) {
+    // 1. Explicit override via env variable
+    if (process.env.REDIRECT_URI) {
+        return process.env.REDIRECT_URI;
+    }
+
+    // 2. Dynamic detection based on incoming request
+    if (req) {
+        const host = req.headers['x-forwarded-host'] || req.get('host') || '';
+        
+        // Match host with registered Google redirect URIs
+        const matchedUri = registeredUris.find(uri => {
+            try {
+                return new URL(uri).host.toLowerCase() === host.toLowerCase();
+            } catch (e) {
+                return false;
+            }
+        });
+        if (matchedUri) return matchedUri;
+
+        // Build from protocol and host if not explicitly matched
+        if (host) {
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+            return `${protocol}://${host}/oauth2callback`;
+        }
+    }
+
+    // 3. Render cloud default
+    if (process.env.RENDER_EXTERNAL_URL) {
+        return `${process.env.RENDER_EXTERNAL_URL}/oauth2callback`;
+    }
+
+    // 4. Default to first registered URI or localhost
+    return registeredUris[0] || 'http://localhost:3000/oauth2callback';
+}
+
+function getOAuthClient(req) {
+    const creds = getCredentialsData();
+    const redirectUri = getRedirectUri(req, creds.redirect_uris);
+    return new google.auth.OAuth2(creds.client_id, creds.client_secret, redirectUri);
 }
 
 async function getDriveForUser(req, res, next) {
@@ -64,7 +161,7 @@ async function getDriveForUser(req, res, next) {
         if (!doc.exists || !doc.data().refresh_token) {
             return res.status(401).json({ error: 'Please reconnect Google Drive' });
         }
-        const auth = getOAuthClient();
+        const auth = getOAuthClient(req);
         auth.setCredentials({ refresh_token: doc.data().refresh_token });
         req.drive = google.drive({ version: 'v3', auth });
         next();
@@ -88,7 +185,7 @@ app.get('/api/auth/status', async (req, res) => {
 });
 
 app.get('/api/auth/url', (req, res) => {
-    const authUrl = getOAuthClient().generateAuthUrl({
+    const authUrl = getOAuthClient(req).generateAuthUrl({
         access_type: 'offline',
         prompt: 'consent',
         scope: SCOPES,
@@ -105,7 +202,7 @@ app.get('/oauth2callback', async (req, res) => {
     const code = req.query.code;
     if (code) {
         try {
-            const auth = getOAuthClient();
+            const auth = getOAuthClient(req);
             const { tokens } = await auth.getToken(code);
             auth.setCredentials(tokens);
             
@@ -352,6 +449,6 @@ app.delete('/api/plans/:id', async (req, res) => {
     }
 });
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+    console.log(`Server is running on port ${port}`);
 });
 
